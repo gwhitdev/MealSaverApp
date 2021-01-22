@@ -45,15 +45,6 @@ namespace MealSaverApp.Controllers
             return View();
         }
 
-        [Authorize(Roles = "admin")]
-        public IActionResult Profile()
-        {
-            return View(new UserProfileViewModel()
-            {
-                Name = User.Identity.Name,
-                EmailAddress = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
-                ProfileImage = User.Claims.FirstOrDefault(c => c.Type == "picture")?.Value
-            });
-        }
+        
     }
 }

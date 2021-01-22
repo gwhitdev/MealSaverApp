@@ -3,11 +3,21 @@ using System.Globalization;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
-
+using MealSaverApp.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using System.Linq;
+using System.Security.Claims;
+using MealSaverApp.Models;
+using MealSaverApp.Interfaces;
 namespace MealSaverApp.Controllers
 {
     public class HomeController : Controller
     {
+        private readonly IIngredientService _ingredientService;
+        public HomeController(IIngredientService ingredientService)
+        {
+            _ingredientService = ingredientService;
+        }
         public async Task<IActionResult> Index()
         {
             // If the user is authenticated, then this is how you can get the access_token and id_token
@@ -30,6 +40,31 @@ namespace MealSaverApp.Controllers
             }
 
             return View();
+        }
+        [Authorize(Roles = "admin")]
+        public IActionResult Admin()
+        {
+            
+            return View(new UserProfileViewModel()
+            {
+                Name = User.Identity.Name,
+                EmailAddress = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
+                ProfileImage = User.Claims.FirstOrDefault(c => c.Type == "picture")?.Value,
+                Role = User.Claims.FirstOrDefault(c => c.Type == "https://mealsaverapp/roles").Value
+            }); ;
+        }
+        [Authorize(Roles = "user")]
+        public async Task<IActionResult> Profile()
+        {
+            return View(new UserProfileViewModel()
+            {
+                Name = User.Identity.Name,
+                EmailAddress = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
+                ProfileImage = User.Claims.FirstOrDefault(c => c.Type == "picture")?.Value,
+                Role = User.Claims.FirstOrDefault(c => c.Type == "https://mealsaverapp/roles").Value,
+                Ingredients = await _ingredientService.GetIngredientsAsync(),
+                Verified = User.Claims.FirstOrDefault(c => c.Type == "email_verified").Value
+            }) ;
         }
 
         public IActionResult Error()

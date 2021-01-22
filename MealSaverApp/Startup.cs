@@ -11,6 +11,10 @@ using Microsoft.Extensions.Hosting;
 using MealSaverApp.Support;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using MealSaverApp.Interfaces;
+using System.Net.Http.Headers;
+using MealSaverApp.Services;
 
 namespace MealSaverApp
 {
@@ -29,15 +33,19 @@ namespace MealSaverApp
             services.ConfigureSameSiteNoneCookies();
 
             // Add authentication services
+           
+
             services.AddAuthentication(options => {
                 options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             })
             .AddCookie()
+            
             .AddOpenIdConnect("Auth0", options => {
                 // Set the authority to your Auth0 domain
                 options.Authority = $"https://{Configuration["Auth0:Domain"]}";
+
                 // Configure the Auth0 Client ID and Client Secret
                 options.ClientId = Configuration["Auth0:ClientId"];
                 options.ClientSecret = Configuration["Auth0:ClientSecret"];
@@ -93,7 +101,13 @@ namespace MealSaverApp
                     }
                 };
             });
-
+            services.AddHttpClient<IIngredientService, IngredientHttpService>(
+                client =>
+                {
+                    client.BaseAddress = new Uri("https://familymealsapi.azurewebsites.net/api/");
+                    client.DefaultRequestHeaders.Add("User-Agent", "MealSaverApp");
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                });
             services.AddControllersWithViews();
         }
 
