@@ -13,5 +13,8 @@ namespace MealSaverApp.Models.ViewModels
         public string Role { get; set; }
         public List<Ingredient> Ingredients { get; set; }
         public string Verified { get; set; }
+        public string Error { get; set; }
+        public bool Authorized { get; set; }
+        public bool ExistsInDb { get; set; }
     }
 }

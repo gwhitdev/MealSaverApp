@@ -33,7 +33,7 @@ namespace MealSaverApp
             services.ConfigureSameSiteNoneCookies();
 
             // Add authentication services
-           
+
 
             services.AddAuthentication(options => {
                 options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -41,7 +41,7 @@ namespace MealSaverApp
                 options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             })
             .AddCookie()
-            
+
             .AddOpenIdConnect("Auth0", options => {
                 // Set the authority to your Auth0 domain
                 options.Authority = $"https://{Configuration["Auth0:Domain"]}";
@@ -75,8 +75,10 @@ namespace MealSaverApp
                 // Saves tokens to the AuthenticationProperties
                 options.SaveTokens = true;
 
+                
                 options.Events = new OpenIdConnectEvents
                 {
+                    
                     // handle the logout redirection 
                     OnRedirectToIdentityProviderForSignOut = (context) =>
                     {
@@ -98,10 +100,23 @@ namespace MealSaverApp
                         context.HandleResponse();
 
                         return Task.CompletedTask;
+                    },
+
+                    OnRedirectToIdentityProvider = context =>
+                    {
+                        context.ProtocolMessage.SetParameter("audience", Configuration["Auth0:Audience"]);
+                        return Task.FromResult(0);
                     }
-                };
+            };
             });
             services.AddHttpClient<IIngredientService, IngredientHttpService>(
+                client =>
+                {
+                    client.BaseAddress = new Uri("https://familymealsapi.azurewebsites.net/api/");
+                    client.DefaultRequestHeaders.Add("User-Agent", "MealSaverApp");
+                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                });
+            services.AddHttpClient<IUserService, UserService>(
                 client =>
                 {
                     client.BaseAddress = new Uri("https://familymealsapi.azurewebsites.net/api/");

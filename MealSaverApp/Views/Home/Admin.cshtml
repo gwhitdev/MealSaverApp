@@ -16,8 +16,20 @@
                 <p>
                     <i class="glyphicon glyphicon-envelope"></i> @Model.EmailAddress
                     <i class="glyphicon glyphicon-pencil"></i>@Model.Role
+                    User in database? @Model.ExistsInDb
                 </p>
             </div>
+
+            
+
+            @if (Model.Ingredients != null || Model.Ingredients.Count > 0)
+            {
+                @foreach(var item in Model.Ingredients)
+                {
+                    <li>@item.Details.Name</li>
+                }
+            }
         </div>
+        <a asp-controller="Ingredients" asp-action="Create">Create new ingredient</a>
     </div>
 </div>

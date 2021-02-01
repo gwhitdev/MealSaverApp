@@ -20,6 +20,7 @@ namespace MealSaverApp.Models
 
         public class Ingredient
         {
+            public string Owner { get; set; }
             public string Id { get; set; }
             public Details Details { get; set; }
             public DateTime CreatedAt { get; set; } = DateTime.Now;

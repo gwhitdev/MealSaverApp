@@ -9,14 +9,23 @@ using System.Linq;
 using System.Security.Claims;
 using MealSaverApp.Models;
 using MealSaverApp.Interfaces;
+using System.Collections.Generic;
 namespace MealSaverApp.Controllers
 {
     public class HomeController : Controller
     {
         private readonly IIngredientService _ingredientService;
-        public HomeController(IIngredientService ingredientService)
+        private readonly IUserService _userService;
+        private string AccessToken { get; set; }
+        public HomeController(IIngredientService ingredientService, IUserService userService)
         {
             _ingredientService = ingredientService;
+            _userService = userService;
+        }
+        
+        public async void GetAccessToken()
+        {
+            AccessToken = await HttpContext.GetTokenAsync("access_token");
         }
         public async Task<IActionResult> Index()
         {
@@ -42,27 +51,66 @@ namespace MealSaverApp.Controllers
             return View();
         }
         [Authorize(Roles = "admin")]
-        public IActionResult Admin()
+        public async Task<IActionResult> Admin()
         {
-            
-            return View(new UserProfileViewModel()
+            GetAccessToken();
+
+            var userIngredients = new List<Ingredient>();
+            bool userInDatabase = await _userService.CheckForLocalUser(AccessToken);
+
+            if(!userInDatabase) await _userService.CreateLocalUser(AccessToken);
+           
+            if (User.Identity.IsAuthenticated && userInDatabase)
             {
-                Name = User.Identity.Name,
-                EmailAddress = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
-                ProfileImage = User.Claims.FirstOrDefault(c => c.Type == "picture")?.Value,
-                Role = User.Claims.FirstOrDefault(c => c.Type == "https://mealsaverapp/roles").Value
-            }); ;
-        }
-        [Authorize(Roles = "user")]
-        public async Task<IActionResult> Profile()
-        {
+                var ingredients = await _ingredientService.GetIngredientsAsync(AccessToken);
+                userIngredients = ingredients;
+            }
+
             return View(new UserProfileViewModel()
             {
                 Name = User.Identity.Name,
                 EmailAddress = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
                 ProfileImage = User.Claims.FirstOrDefault(c => c.Type == "picture")?.Value,
                 Role = User.Claims.FirstOrDefault(c => c.Type == "https://mealsaverapp/roles").Value,
-                Ingredients = await _ingredientService.GetIngredientsAsync(),
+                Ingredients = userIngredients,
+                ExistsInDb = userInDatabase // could be removed once initial development is finished
+            });
+        }
+
+        [Authorize(Roles = "user")]
+        public async Task<IActionResult> Profile()
+        {
+
+            List<Ingredient> userIngredients = new List<Ingredient>();
+
+            string accessToken = "";
+            //var errorMsg = "None";
+            var tokenAccepted = false;
+            if (User.Identity.IsAuthenticated)
+            {
+                accessToken = await HttpContext.GetTokenAsync("access_token");
+            }
+
+            if (!String.IsNullOrEmpty(accessToken))
+            {
+                List<Ingredient> fetchIngredients = await _ingredientService.GetIngredientsAsync(accessToken);
+                if (fetchIngredients != null )
+                {
+                    //userIngredients = fetchIngredients;
+                    tokenAccepted = true;
+                }
+                
+            }
+
+                return View(new UserProfileViewModel()
+            {
+                Name = User.Identity.Name,
+                EmailAddress = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value,
+                ProfileImage = User.Claims.FirstOrDefault(c => c.Type == "picture")?.Value,
+                Role = User.Claims.FirstOrDefault(c => c.Type == "https://mealsaverapp/roles").Value,
+                //Ingredients = userIngredients,
+                //Error = errorMsg,
+                Authorized = tokenAccepted,
                 Verified = User.Claims.FirstOrDefault(c => c.Type == "email_verified").Value
             }) ;
         }

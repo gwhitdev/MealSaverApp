@@ -9,6 +9,7 @@ using System.Net;
 using System.Text;
 using MealSaverApp.Interfaces;
 using MealSaverApp.Models;
+using System.Net.Http.Headers;
 
 namespace MealSaverApp.Services
 {
@@ -28,25 +29,42 @@ namespace MealSaverApp.Services
         /// Method to get all ingredients from API
         /// </summary>
         /// <returns>Enumarble list of ingredients</returns>
-        public async Task<List<Ingredient>> GetIngredientsAsync()
+        public async Task<List<Ingredient>> GetIngredientsAsync(string accessToken)
         {
 
             var url = "Ingredients";
 
             try
             {
+                _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                 HttpResponseMessage response = await _client.GetAsync(url);
                 response.EnsureSuccessStatusCode();
 
                 var result = await response.Content.ReadAsStringAsync();
                 JArray convertedResult = JArray.Parse(result);
                 IList<JToken> results = convertedResult[0]["data"]["ingredients"].Children().ToList();
+
                 // serialize Json results into .Net objects
                 SearchResults = new List<Ingredient>();
+
                 foreach (JToken searchResult in results)
                 {
                     Ingredient ingredient = searchResult.ToObject<Ingredient>();
                     SearchResults.Add(ingredient);
+                }
+
+                var detailsContainsNull = SearchResults.Exists(i => i.Details == null);
+                Details nulledIngredientReplacement = new Details()
+                {
+                    Name = "no info",
+                };
+                if (detailsContainsNull)
+                {
+                    var detailsToReplace = SearchResults.FindAll(i => i.Details == null);
+                    foreach(var ingredient in detailsToReplace)
+                    {
+                        ingredient.Details = nulledIngredientReplacement;
+                    }
                 }
             }
             catch (Exception ex)
@@ -89,13 +107,12 @@ namespace MealSaverApp.Services
             return Ingredient;
         }
 
-        public async Task<bool> CreateIngredientAsync(Ingredient ingredient)
+        public async Task<bool> CreateIngredientAsync(Ingredient ingredient, string accessToken)
         {
             var url = $"Ingredients";
-
-
             var json = JsonConvert.SerializeObject(ingredient);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             var response = await _client.PostAsync(url, content);
 
             if (response.StatusCode == HttpStatusCode.Created)

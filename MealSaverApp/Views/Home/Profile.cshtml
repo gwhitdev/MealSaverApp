@@ -24,13 +24,18 @@
                 </p>
 
                 <p>
-                    @foreach (var item in Model.Ingredients)
+                    <span>Token accepted? @Model.Authorized.ToString() </span>
+                    @if (Model.Ingredients != null)
                     {
-                        <ul>
-                            <li>@item.Details.Name</li>
-                            <li>@item.Details.KeptAt</li>
-                        </ul>
+                        @foreach (var item in Model.Ingredients)
+                        {
+                            <ul>
+                                <li>@item.Details.Name</li>
+                                <li>@item.Details.KeptAt</li>
+                            </ul>
+                        }
                     }
+
                 </p>
             </div>
         </div>
