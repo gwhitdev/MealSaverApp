@@ -38,15 +38,16 @@ namespace MealSaverApp.Services
         {
 
             var url = "Ingredients";
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             try
             {
-                _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                 HttpResponseMessage response = await _client.GetAsync(url);
                 response.EnsureSuccessStatusCode();
 
                 var result = await response.Content.ReadAsStringAsync();
                 JArray convertedResult = JArray.Parse(result);
+
                 IList<JToken> results = convertedResult[0]["data"]["ingredients"].Children().ToList();
 
                 // serialize Json results into .Net objects
@@ -63,6 +64,7 @@ namespace MealSaverApp.Services
                 {
                     Name = "no info",
                 };
+
                 if (detailsContainsNull)
                 {
                     var detailsToReplace = SearchResults.FindAll(i => i.Details == null);
@@ -74,7 +76,7 @@ namespace MealSaverApp.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                _logger.LogError(ex.Message);
             }
             return SearchResults;
         }
@@ -106,7 +108,7 @@ namespace MealSaverApp.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                _logger.LogError(ex.Message);
             }
 
             return Ingredient;
@@ -118,24 +120,18 @@ namespace MealSaverApp.Services
             var json = JsonConvert.SerializeObject(ingredient);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
             var response = await _client.PostAsync(url, content);
             var result = await response.Content.ReadAsStringAsync();
+
             JToken convertedResult = JToken.Parse(result);
-            //List<JToken> results = convertedResult[0]["data"]["ingredients"].Children().ToList();
             Ingredient = convertedResult.ToObject<Ingredient>();
+
             var ingredientId = Ingredient.Id;
-            
-            if(response.IsSuccessStatusCode)
-            {
-                await _userService.UpdateLocalUser(accessToken, ingredientId);
-            }
-            if (response.StatusCode == HttpStatusCode.Created)
-            {
-                return true;
-            }
+            bool updatedLocalUser = false;
+            if (response.IsSuccessStatusCode) updatedLocalUser = await _userService.UpdateLocalUser(accessToken, ingredientId);
 
-            return false;
-
+            return updatedLocalUser;
         }
 
         public async Task<bool> DeleteIngredientAsync(string ingredientId)
@@ -143,12 +139,7 @@ namespace MealSaverApp.Services
             var url = "Ingredients";
             var response = await _client.DeleteAsync($"{url}/{ingredientId}");
 
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                return true;
-            }
-
-            return false;
+            return response.StatusCode == HttpStatusCode.OK;
         }
     }
 }

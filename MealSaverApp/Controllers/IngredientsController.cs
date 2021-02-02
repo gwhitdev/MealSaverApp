@@ -56,7 +56,6 @@ namespace MealSaverApp.Controllers
 
             try
             {
-
                 await _ingredientService.CreateIngredientAsync(ingredient, AccessToken);
                 if (role == "admin") return RedirectToAction("Admin", "Home");
                 return RedirectToAction("Profile","Home");
