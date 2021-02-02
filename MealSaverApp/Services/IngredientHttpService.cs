@@ -10,19 +10,24 @@ using System.Text;
 using MealSaverApp.Interfaces;
 using MealSaverApp.Models;
 using System.Net.Http.Headers;
+using Microsoft.Extensions.Logging;
 
 namespace MealSaverApp.Services
 {
     public class IngredientHttpService : IIngredientService
     {
         private readonly HttpClient _client;
+        private readonly IUserService _userService;
+        private readonly ILogger _logger;
         private List<Ingredient> SearchResults { get; set; }
         private Ingredient Ingredient { get; set; }
 
-        public IngredientHttpService(HttpClient client)
+        public IngredientHttpService(HttpClient client, IUserService userService, ILoggerFactory loggerFactory)
         {
             // Injected HttpClient
             _client = client;
+            _userService = userService;
+            _logger = loggerFactory.CreateLogger<IngredientHttpService>();
         }
 
         /// <summary>
@@ -114,7 +119,16 @@ namespace MealSaverApp.Services
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             var response = await _client.PostAsync(url, content);
-
+            var result = await response.Content.ReadAsStringAsync();
+            JToken convertedResult = JToken.Parse(result);
+            //List<JToken> results = convertedResult[0]["data"]["ingredients"].Children().ToList();
+            Ingredient = convertedResult.ToObject<Ingredient>();
+            var ingredientId = Ingredient.Id;
+            
+            if(response.IsSuccessStatusCode)
+            {
+                await _userService.UpdateLocalUser(accessToken, ingredientId);
+            }
             if (response.StatusCode == HttpStatusCode.Created)
             {
                 return true;

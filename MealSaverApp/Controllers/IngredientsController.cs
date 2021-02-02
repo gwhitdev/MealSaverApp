@@ -14,9 +14,11 @@ namespace MealSaverApp.Controllers
     {
         private string AccessToken { get; set; }
         private readonly IIngredientService _ingredientService;
-        public IngredientsController(IIngredientService ingredientService)
+        private readonly IUserService _userService;
+        public IngredientsController(IIngredientService ingredientService, IUserService userService)
         {
             _ingredientService = ingredientService;
+            _userService = userService;
         }
         private async void GetAccessToken()
         {
@@ -44,7 +46,7 @@ namespace MealSaverApp.Controllers
                 Owner = ownerId,
                 Details = details
             };
-            
+
             GetAccessToken();
 
             try
@@ -53,8 +55,9 @@ namespace MealSaverApp.Controllers
                 await _ingredientService.CreateIngredientAsync(ingredient, AccessToken);
                 return RedirectToAction(nameof(Create));
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 return View();
             }
         }
