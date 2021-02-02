@@ -23,21 +23,13 @@ namespace MealSaverApp.Services
         {
             _userClient = userClient;
             _logger = loggerFactory.CreateLogger<UserService>();
-
         }
         public async Task<bool> CheckForLocalUser(string accessToken)
         {
             string url = "users";
             _userClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             HttpResponseMessage response = await _userClient.GetAsync(url);
-
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                return true;
-            }
-
-            return false;
-
+            return response.StatusCode == HttpStatusCode.OK;
         }
 
         public async Task<User> Get(string accessToken)
@@ -87,17 +79,14 @@ namespace MealSaverApp.Services
                     ingredient.Details = nulledIngredientReplacement;
                 }
             }
-
             return foundIngredients;
-
         }
         public async Task<bool> CreateLocalUser(string accessToken)
         {
             string url = $"users/CreateUser";
             _userClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             HttpResponseMessage response = await _userClient.GetAsync(url);
-            if (response.IsSuccessStatusCode) return true;
-            return false;
+            return response.IsSuccessStatusCode;
         }
 
         public async Task<bool> UpdateLocalUser(string accessToken, string ingredientId)
@@ -121,8 +110,8 @@ namespace MealSaverApp.Services
             JArray convertedResponse = JArray.Parse(result);
             User returnedUser = convertedResponse[0]["data"]["user"].ToObject<User>();
 
-            if (returnedUser.UserIngredients.Contains(updatedUser.UserIngredients[0])) return true;
-            return false;
+            bool returnedUserContainsNewIngredient = returnedUser.UserIngredients.Contains(updatedUser.UserIngredients[0]);
+            return returnedUserContainsNewIngredient;
         }
 
         public bool DeleteLocalUser(string userId)
