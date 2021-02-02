@@ -10,17 +10,20 @@ using System.Security.Claims;
 using MealSaverApp.Models;
 using MealSaverApp.Interfaces;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 namespace MealSaverApp.Controllers
 {
     public class HomeController : Controller
     {
         private readonly IIngredientService _ingredientService;
         private readonly IUserService _userService;
+        private readonly ILogger _logger;
         private string AccessToken { get; set; }
-        public HomeController(IIngredientService ingredientService, IUserService userService)
+        public HomeController(IIngredientService ingredientService, IUserService userService, ILoggerFactory loggerFactory)
         {
             _ingredientService = ingredientService;
             _userService = userService;
+            _logger = loggerFactory.CreateLogger<HomeController>();
         }
         
         public async void GetAccessToken()
@@ -62,7 +65,7 @@ namespace MealSaverApp.Controllers
            
             if (User.Identity.IsAuthenticated && userInDatabase)
             {
-                var ingredients = await _ingredientService.GetIngredientsAsync(AccessToken);
+                var ingredients = await _userService.GetUserIngredientsAsync(AccessToken);
                 userIngredients = ingredients;
             }
 

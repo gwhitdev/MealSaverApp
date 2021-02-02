@@ -11,6 +11,7 @@ namespace MealSaverApp.Interfaces
         Task<bool> CheckForLocalUser(string accessToken);
         Task<bool> CreateLocalUser(string accessToken);
         Task<bool> UpdateLocalUser(string accessToken, string ingredientId);
+        Task<List<Ingredient>> GetUserIngredientsAsync(string accessToken);
         bool DeleteLocalUser(string userId);
         
     }

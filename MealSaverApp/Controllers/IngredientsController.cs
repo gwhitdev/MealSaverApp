@@ -7,6 +7,7 @@ using MealSaverApp.Interfaces;
 using MealSaverApp.Models;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace MealSaverApp.Controllers
 {
@@ -15,10 +16,12 @@ namespace MealSaverApp.Controllers
         private string AccessToken { get; set; }
         private readonly IIngredientService _ingredientService;
         private readonly IUserService _userService;
-        public IngredientsController(IIngredientService ingredientService, IUserService userService)
+        private readonly ILogger _logger;
+        public IngredientsController(IIngredientService ingredientService, IUserService userService, ILoggerFactory loggerFactory)
         {
             _ingredientService = ingredientService;
             _userService = userService;
+            _logger = loggerFactory.CreateLogger<IngredientsController>();
         }
         private async void GetAccessToken()
         {
@@ -41,6 +44,8 @@ namespace MealSaverApp.Controllers
         public async Task<IActionResult> Create(Details details)
         {
             var ownerId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value; //Owner ID to send to API as part of ingredient
+            var role = User.Claims.FirstOrDefault(c => c.Type == "https://mealsaverapp/roles").Value;
+            //_logger.LogDebug($"{role}");
             Ingredient ingredient = new Ingredient()
             {
                 Owner = ownerId,
@@ -53,7 +58,8 @@ namespace MealSaverApp.Controllers
             {
 
                 await _ingredientService.CreateIngredientAsync(ingredient, AccessToken);
-                return RedirectToAction(nameof(Create));
+                if (role == "admin") return RedirectToAction("Admin", "Home");
+                return RedirectToAction("Profile","Home");
             }
             catch (Exception ex)
             {

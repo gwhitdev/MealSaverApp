@@ -51,6 +51,46 @@ namespace MealSaverApp.Services
             User user = confirmedUser.ToObject<User>();
             return user;
         }
+
+        public async Task<List<Ingredient>> GetUserIngredientsAsync(string accessToken)
+        {
+            string url = "users/GetUserIngredients";
+            _userClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            HttpResponseMessage response = await _userClient.GetAsync(url);
+
+            List<Ingredient> foundIngredients = new List<Ingredient>();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadAsStringAsync();
+                JToken convertedResult = JArray.Parse(result);
+                List<JToken> results = convertedResult[0]["data"]["ingredients"].ToList();
+                
+                foreach (JToken foundResult in results)
+                {
+                    Ingredient ingredient = foundResult.ToObject<Ingredient>();
+                    foundIngredients.Add(ingredient);
+                }
+            }
+            
+            var detailsContainsNull = foundIngredients.Exists(i => i.Details == null);
+            Details nulledIngredientReplacement = new Details()
+            {
+                Name = "No ingredients found"
+            };
+
+            if(detailsContainsNull)
+            {
+                var detailsToReplace = foundIngredients.FindAll(i => i.Details == null);
+                foreach(var ingredient in detailsToReplace)
+                {
+                    ingredient.Details = nulledIngredientReplacement;
+                }
+            }
+
+            return foundIngredients;
+
+        }
         public async Task<bool> CreateLocalUser(string accessToken)
         {
             string url = $"users/CreateUser";
@@ -91,3 +131,4 @@ namespace MealSaverApp.Services
         }
     }
 }
+ 
