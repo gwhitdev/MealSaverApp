@@ -12,7 +12,7 @@ namespace MealSaverApp.Interfaces
         Task<Ingredient> GetIngredientAsync(string id);
 
         Task<bool> CreateIngredientAsync(Ingredient ingredient, string accessToken);
-        Task<bool> DeleteIngredientAsync(string Id);
+        Task<bool> DeleteIngredientAsync(string accessToken, string Id);
         // void UpdateIngredient(string Id);
     }
 }

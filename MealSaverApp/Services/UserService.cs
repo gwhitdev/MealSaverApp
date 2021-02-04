@@ -60,12 +60,20 @@ namespace MealSaverApp.Services
                 
                 foreach (JToken foundResult in results)
                 {
+                    
                     Ingredient ingredient = foundResult.ToObject<Ingredient>();
+                    _logger.LogDebug($"FOUND INGREDIENTS = {foundResult}");
                     foundIngredients.Add(ingredient);
                 }
+                
+            }
+            /*
+            bool detailsContainsNull = false;
+            if(foundIngredients.Count > 0)
+            {
+                detailsContainsNull = foundIngredients.Contains(null);
             }
             
-            var detailsContainsNull = foundIngredients.Exists(i => i.Details == null);
             Details nulledIngredientReplacement = new Details()
             {
                 Name = "No ingredients found"
@@ -79,6 +87,7 @@ namespace MealSaverApp.Services
                     ingredient.Details = nulledIngredientReplacement;
                 }
             }
+            */
             return foundIngredients;
         }
         public async Task<bool> CreateLocalUser(string accessToken)

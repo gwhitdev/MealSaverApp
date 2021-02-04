@@ -30,6 +30,26 @@ namespace MealSaverApp.Services
             _logger = loggerFactory.CreateLogger<IngredientHttpService>();
         }
 
+        public async Task<bool> CreateIngredientAsync(Ingredient ingredient, string accessToken)
+        {
+            var url = $"Ingredients";
+            var json = JsonConvert.SerializeObject(ingredient);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var response = await _client.PostAsync(url, content);
+            var result = await response.Content.ReadAsStringAsync();
+
+            JToken convertedResult = JToken.Parse(result);
+            Ingredient = convertedResult.ToObject<Ingredient>();
+
+            var ingredientId = Ingredient.Id;
+            bool updatedLocalUser = false;
+            if (response.IsSuccessStatusCode) updatedLocalUser = await _userService.UpdateLocalUser(accessToken, ingredientId);
+
+            return updatedLocalUser;
+        }
+
         /// <summary>
         /// Method to get all ingredients from API
         /// </summary>
@@ -114,32 +134,13 @@ namespace MealSaverApp.Services
             return Ingredient;
         }
 
-        public async Task<bool> CreateIngredientAsync(Ingredient ingredient, string accessToken)
+        public async Task<bool> DeleteIngredientAsync(string accessToken, string ingredientId)
         {
-            var url = $"Ingredients";
-            var json = JsonConvert.SerializeObject(ingredient);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var url = $"Ingredients/{ingredientId}";
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            var response = await _client.PostAsync(url, content);
-            var result = await response.Content.ReadAsStringAsync();
-
-            JToken convertedResult = JToken.Parse(result);
-            Ingredient = convertedResult.ToObject<Ingredient>();
-
-            var ingredientId = Ingredient.Id;
-            bool updatedLocalUser = false;
-            if (response.IsSuccessStatusCode) updatedLocalUser = await _userService.UpdateLocalUser(accessToken, ingredientId);
-
-            return updatedLocalUser;
-        }
-
-        public async Task<bool> DeleteIngredientAsync(string ingredientId)
-        {
-            var url = "Ingredients";
-            var response = await _client.DeleteAsync($"{url}/{ingredientId}");
-
-            return response.StatusCode == HttpStatusCode.OK;
+            var response = await _client.DeleteAsync(url);
+            _logger.LogDebug($"DELETED INGREDIENT: {response.StatusCode}");
+            return response.IsSuccessStatusCode;
         }
     }
 }

@@ -43,6 +43,8 @@ namespace MealSaverApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Details details)
         {
+            GetAccessToken();
+
             var ownerId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value; //Owner ID to send to API as part of ingredient
             var role = User.Claims.FirstOrDefault(c => c.Type == "https://mealsaverapp/roles").Value;
             //_logger.LogDebug($"{role}");
@@ -51,8 +53,6 @@ namespace MealSaverApp.Controllers
                 Owner = ownerId,
                 Details = details
             };
-
-            GetAccessToken();
 
             try
             {
@@ -72,9 +72,21 @@ namespace MealSaverApp.Controllers
             return View();
         }
 
-        public IActionResult Delete()
+        public async Task<IActionResult> Delete(string id)
         {
-            return View();
+            GetAccessToken();
+            bool deletedIngredient = await _ingredientService.DeleteIngredientAsync(AccessToken, id);
+            _logger.LogDebug($"RETURNED deletedIngredient? {deletedIngredient}");
+            if (deletedIngredient)
+            {
+                TempData["IngredientDeleted"] = "Ingredient deleted";
+            }
+            else
+            {
+                TempData["IngredientDeleted"] = "Ingredient not deleted";
+            }
+            
+            return RedirectToAction("Admin", "Home");
         }
     }
 }

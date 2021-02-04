@@ -69,6 +69,8 @@ namespace MealSaverApp.Controllers
                 userIngredients = ingredients;
             }
 
+            ViewBag.Message = TempData["IngredientDeleted"];
+
             return View(new UserProfileViewModel()
             {
                 Name = User.Identity.Name,
